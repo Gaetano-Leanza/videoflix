@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import RegistrationSerializer
+from .utils import send_activation_email  
 
 class RegistrationView(APIView):
     def post(self, request):
@@ -9,13 +10,15 @@ class RegistrationView(APIView):
         
         if serializer.is_valid():
             user = serializer.save()
-            # TODO: Hier fügen wir im nächsten Schritt den E-Mail-Versand ein
+            
+            send_activation_email(user)
+            
             return Response(
-                {"message": "Registrierung erfolgreich. Bitte überprüfe deine E-Mails zur Aktivierung."}, 
+                {"message": "Registration successful. Please check your emails for activation."}, 
                 status=status.HTTP_201_CREATED
             )
             
         return Response(
-            {"error": "Bitte überprüfe deine Eingaben und versuche es erneut."}, 
+            {"error": "Please check your input and try again."}, 
             status=status.HTTP_400_BAD_REQUEST
         )

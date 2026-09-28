@@ -15,11 +15,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
         password = self.validated_data['password']
         repeated_password = self.validated_data['repeated_password']
         
-      
         if password != repeated_password:
-            raise serializers.ValidationError({'error': 'Bitte überprüfe deine Eingaben und versuche es erneut.'})
+            raise serializers.ValidationError({'error': 'Please check your input and try again.'})
         
-       
         user = CustomUser(
             email=self.validated_data['email'],
             username=self.validated_data['email'] 

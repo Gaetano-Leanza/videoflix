@@ -118,3 +118,5 @@ MAILERS = {
 CORS_ALLOW_ALL_ORIGINS = True
 
 AUTH_USER_MODEL = 'users.CustomUser'
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
