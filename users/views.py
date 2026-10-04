@@ -11,6 +11,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from .models import CustomUser
 from .serializers import RegistrationSerializer
 from .utils import send_activation_email
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class RegistrationView(APIView):
@@ -20,13 +21,23 @@ class RegistrationView(APIView):
         if serializer.is_valid():
             user = serializer.save()
             send_activation_email(user)
+
+            refresh = RefreshToken.for_user(user)
+
             return Response(
-                {"message": "Registration successful. Please check your emails for activation."},
+                {
+                    "user": {
+                        "id": user.id,
+                        "email": user.email
+                    },
+                    "token": str(refresh.access_token)
+                },
                 status=status.HTTP_201_CREATED
             )
 
         return Response(
-            {"error": "Please check your input and try again."},
+            {"error": "Please check your input and try again.",
+                "details": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -126,4 +137,53 @@ class LogoutView(APIView):
             return Response(
                 {"error": "Invalid or expired refresh token."},
                 status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class CustomTokenRefreshView(APIView):
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refresh_token')
+
+        if not refresh_token:
+            return Response(
+                {"error": "Refresh token is missing."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            old_token = RefreshToken(refresh_token)
+
+            user_id = old_token['user_id']
+            user = CustomUser.objects.get(id=user_id)
+
+            old_token.blacklist()
+
+            new_token = RefreshToken.for_user(user)
+
+            response = Response(
+                {"detail": "Token refresh successful."},
+                status=status.HTTP_200_OK
+            )
+
+
++
+            response.set_cookie(
+                key='access_token',
+                value=str(new_token.access_token),
+                httponly=True,
+                samesite='Lax'
+            )
+            response.set_cookie(
+                key='refresh_token',
+                value=str(new_token),
+                httponly=True,
+                samesite='Lax'
+            )
+
+            return response
+
+        except (TokenError, CustomUser.DoesNotExist):
+            return Response(
+                {"error": "Invalid or expired refresh token."},
+                status=status.HTTP_401_UNAUTHORIZED
             )
