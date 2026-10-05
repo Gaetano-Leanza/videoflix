@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import CustomUser
-# Zeile 3 (doppelter Import) gelöscht
 
 class RegistrationSerializer(serializers.ModelSerializer):
     
