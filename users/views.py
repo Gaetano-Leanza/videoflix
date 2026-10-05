@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.contrib.auth.tokens import default_token_generator
@@ -8,8 +9,9 @@ from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+
 from .models import CustomUser
-from .serializers import RegistrationSerializer
+from .serializers import RegistrationSerializer, PasswordConfirmSerializer
 from .utils import send_activation_email, send_password_reset_email
 
 
@@ -21,7 +23,6 @@ class RegistrationView(APIView):
             user = serializer.save()
             send_activation_email(user)
 
-            # Dummy-Token für die Response laut Doku
             refresh = RefreshToken.for_user(user)
 
             return Response(
@@ -43,7 +44,6 @@ class RegistrationView(APIView):
 
 
 class ActivationView(APIView):
-
     def get(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
@@ -195,10 +195,40 @@ class PasswordResetView(APIView):
                 user = CustomUser.objects.get(email=email)
                 send_password_reset_email(user)
             except ObjectDoesNotExist:
-
                 pass
 
         return Response(
             {"detail": "An email has been sent to reset your password."},
             status=status.HTTP_200_OK
         )
+
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, uidb64, token):
+        serializer = PasswordConfirmSerializer(data=request.data)
+
+        if serializer.is_valid():
+            try:
+                uid = force_str(urlsafe_base64_decode(uidb64))
+                user = CustomUser.objects.get(pk=uid)
+            except (TypeError, ValueError, OverflowError, ObjectDoesNotExist):
+                user = None
+
+            if user is not None and default_token_generator.check_token(user, token):
+              
+                user.set_password(serializer.validated_data['new_password'])
+                user.save()
+
+                return Response(
+                    {"detail": "Your Password has been successfully reset."},
+                    status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"detail": "Token is invalid or has expired."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
