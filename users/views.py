@@ -10,8 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from .models import CustomUser
 from .serializers import RegistrationSerializer
-from .utils import send_activation_email
-from rest_framework_simplejwt.tokens import RefreshToken
+from .utils import send_activation_email, send_password_reset_email
 
 
 class RegistrationView(APIView):
@@ -22,6 +21,7 @@ class RegistrationView(APIView):
             user = serializer.save()
             send_activation_email(user)
 
+            # Dummy-Token für die Response laut Doku
             refresh = RefreshToken.for_user(user)
 
             return Response(
@@ -43,6 +43,7 @@ class RegistrationView(APIView):
 
 
 class ActivationView(APIView):
+
     def get(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
@@ -152,12 +153,10 @@ class CustomTokenRefreshView(APIView):
 
         try:
             old_token = RefreshToken(refresh_token)
-
             user_id = old_token['user_id']
             user = CustomUser.objects.get(id=user_id)
 
             old_token.blacklist()
-
             new_token = RefreshToken.for_user(user)
 
             response = Response(
@@ -165,8 +164,6 @@ class CustomTokenRefreshView(APIView):
                 status=status.HTTP_200_OK
             )
 
-
-+
             response.set_cookie(
                 key='access_token',
                 value=str(new_token.access_token),
@@ -182,8 +179,26 @@ class CustomTokenRefreshView(APIView):
 
             return response
 
-        except (TokenError, CustomUser.DoesNotExist):
+        except (TokenError, ObjectDoesNotExist):
             return Response(
                 {"error": "Invalid or expired refresh token."},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+
+
+class PasswordResetView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+
+        if email:
+            try:
+                user = CustomUser.objects.get(email=email)
+                send_password_reset_email(user)
+            except ObjectDoesNotExist:
+
+                pass
+
+        return Response(
+            {"detail": "An email has been sent to reset your password."},
+            status=status.HTTP_200_OK
+        )
