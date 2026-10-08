@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'users',
     'videos',
-
+    'django_rq',
 ]
 
 MIDDLEWARE = [
@@ -134,3 +134,13 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_CREDENTIALS = True
+
+
+RQ_QUEUES = {
+    'default': {
+        'HOST': 'localhost',
+        'PORT': 6379,
+        'DB': 0,
+        'DEFAULT_TIMEOUT': 3600,
+    }
+}
