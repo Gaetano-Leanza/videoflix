@@ -7,3 +7,4 @@ class VideosConfig(AppConfig):
 
     def ready(self):
         import videos.signals
+
