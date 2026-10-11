@@ -1,40 +1,48 @@
 from django.core.mail import send_mail
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework_simplejwt.tokens import RefreshToken
+from .models import CustomUser
 
 
 def send_activation_email(user):
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-
-    activation_link = f"http://localhost:4200/activate/{uid}/{token}/"
-
-    subject = 'Activate your Videoflix Account'
-    message = f'Hello,\n\nPlease click on the following link to activate your account:\n{activation_link}\n\nYour Videoflix Team'
-
-    send_mail(
-        subject,
-        message,
-        'noreply@videoflix.com',
-        [user.email],
-        fail_silently=False,
-    )
+    link = f"http://localhost:4200/activate/{uid}/{token}/"
+    subject = "Activate your Videoflix Account"
+    msg = f"Hello,\n\nPlease activate your account:\n{link}\n\nVideoflix Team"
+    send_mail(subject, msg, "noreply@videoflix.com",
+              [user.email], fail_silently=False)
 
 
 def send_password_reset_email(user):
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
+    link = f"http://localhost:4200/reset-password/{uid}/{token}/"
+    subject = "Reset your Videoflix Password"
+    msg = f"Hello,\n\nPlease reset your password:\n{link}\n\nVideoflix Team"
+    send_mail(subject, msg, "noreply@videoflix.com",
+              [user.email], fail_silently=False)
 
-    reset_link = f"http://localhost:4200/reset-password/{uid}/{token}/"
 
-    subject = 'Reset your Videoflix Password'
-    message = f'Hello,\n\nPlease click on the following link to reset your password:\n{reset_link}\n\nIf you did not request this, you can safely ignore this email.\n\nYour Videoflix Team'
+def set_auth_cookies(response, refresh):
+    kwargs = {"httponly": True, "samesite": "Lax"}
+    response.set_cookie("access_token", str(refresh.access_token), **kwargs)
+    response.set_cookie("refresh_token", str(refresh), **kwargs)
+    return response
 
-    send_mail(
-        subject,
-        message,
-        'noreply@videoflix.com',
-        [user.email],
-        fail_silently=False,
-    )
+
+def delete_auth_cookies(response):
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    return response
+
+
+def get_user_from_uidb64(uidb64):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        return CustomUser.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, ObjectDoesNotExist):
+        return None

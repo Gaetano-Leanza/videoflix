@@ -3,32 +3,28 @@ from .models import CustomUser
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
-
     confirmed_password = serializers.CharField(write_only=True)
 
     class Meta:
         model = CustomUser
         fields = ['email', 'password', 'confirmed_password']
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+        extra_kwargs = {'password': {'write_only': True}}
 
-    def save(self):
-        password = self.validated_data['password']
-        confirmed_password = self.validated_data['confirmed_password']
-
-        if password != confirmed_password:
+    def validate(self, attrs):
+        if attrs.get('password') != attrs.get('confirmed_password'):
             raise serializers.ValidationError(
-                {'error': 'Please check your input and try again.'})
+                {'error': 'Please check your input and try again.'}
+            )
+        return attrs
 
+    def create(self, validated_data):
         user = CustomUser(
-            email=self.validated_data['email'],
-            username=self.validated_data['email']
+            email=validated_data['email'],
+            username=validated_data['email'],
+            is_active=False
         )
-        user.set_password(password)
-        user.is_active = False
+        user.set_password(validated_data['password'])
         user.save()
-
         return user
 
 
@@ -39,5 +35,6 @@ class PasswordConfirmSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs.get('new_password') != attrs.get('confirm_password'):
             raise serializers.ValidationError(
-                {"detail": "Die Passwörter stimmen nicht überein."})
+                {'detail': 'Die Passwörter stimmen nicht überein.'}
+            )
         return attrs
