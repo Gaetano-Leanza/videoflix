@@ -3,9 +3,15 @@ from .models import Video
 
 
 class VideoSerializer(serializers.ModelSerializer):
+    thumbnail_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Video
-        fields = [
-            'id', 'title', 'description', 'created_at',
-            'category', 'thumbnail', 'video_file'
-        ]
+        fields = ['id', 'created_at', 'title',
+                  'description', 'thumbnail_url', 'category']
+
+    def get_thumbnail_url(self, obj):
+        request = self.context.get('request')
+        if obj.thumbnail:
+            return request.build_absolute_uri(obj.thumbnail.url) if request else obj.thumbnail.url
+        return None

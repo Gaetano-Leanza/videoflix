@@ -8,11 +8,10 @@ from .utils import get_hls_file_response
 
 
 class VideoListView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def get(self, request):
-        videos = Video.objects.all().order_by('-created_at')
-        serializer = VideoSerializer(videos, many=True)
+        videos = Video.objects.all()
+        serializer = VideoSerializer(
+            videos, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -30,5 +29,5 @@ class VideoSegmentView(APIView):
 
     def get(self, request, movie_id, resolution, segment):
         return get_hls_file_response(
-            movie_id, resolution, segment, 'video/mp2t'
+            movie_id, resolution, segment, 'video/MP2T'
         )
