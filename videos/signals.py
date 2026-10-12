@@ -1,6 +1,8 @@
-import django_rq
+"""Signal handlers for reacting to video model lifecycle events."""
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import django_rq
 
 from .models import Video
 from .tasks import convert_video_to_hls
@@ -8,5 +10,6 @@ from .tasks import convert_video_to_hls
 
 @receiver(post_save, sender=Video)
 def video_post_save(sender, instance, created, **kwargs):
+    """Trigger asynchronous HLS transcoding when a new video is uploaded."""
     if created and instance.video_file:
         django_rq.enqueue(convert_video_to_hls, instance.id)

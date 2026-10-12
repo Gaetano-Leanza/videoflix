@@ -1,9 +1,14 @@
+"""Utility helper functions for resolving and serving video stream assets."""
+
 import os
-from django.http import Http404, FileResponse
+
+from django.http import FileResponse, Http404
+
 from .models import Video
 
 
 def get_hls_file_response(movie_id, resolution, filename, content_type):
+    """Retrieve requested HLS file and return it as a streaming FileResponse."""
     video = Video.objects.filter(id=movie_id).first()
     if not video or not video.video_file:
         raise Http404("Video nicht gefunden")

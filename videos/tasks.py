@@ -1,11 +1,15 @@
+"""Background worker tasks for asynchronous video transcoding to HLS."""
+
 import os
 import subprocess
+
 from .models import Video
 
 RESOLUTIONS = {'480p': 480, '720p': 720, '1080p': 1080}
 
 
 def build_ffmpeg_cmd(source, target_m3u8, target_ts, height):
+    """Construct FFmpeg CLI command list for HLS transcoding."""
     return [
         'ffmpeg', '-i', source,
         '-vf', f'scale=-2:{height}',
@@ -17,6 +21,7 @@ def build_ffmpeg_cmd(source, target_m3u8, target_ts, height):
 
 
 def convert_resolution(source_path, video_dir, res_name, height):
+    """Transcode source video to target resolution and output HLS segments."""
     res_dir = os.path.join(video_dir, res_name)
     os.makedirs(res_dir, exist_ok=True)
     m3u8_file = os.path.join(res_dir, 'index.m3u8')
@@ -26,6 +31,7 @@ def convert_resolution(source_path, video_dir, res_name, height):
 
 
 def convert_video_to_hls(video_id):
+    """Fetch video instance and trigger multi-resolution HLS conversion."""
     video = Video.objects.get(id=video_id)
     source_path = video.video_file.path
     video_dir = os.path.join(os.path.dirname(source_path), str(video.id))
