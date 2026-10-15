@@ -11,4 +11,4 @@ class VideosConfig(AppConfig):
 
     def ready(self):
         """Import signal handlers when the application is loaded."""
-        import videos.signals
+        import videos.signals  # noqa: F401
