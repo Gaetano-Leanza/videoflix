@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'videos',
     'django_rq',
     'debug_toolbar',
+    'import_export',
 ]
 
 MIDDLEWARE = [
