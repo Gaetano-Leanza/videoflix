@@ -34,10 +34,12 @@ INSTALLED_APPS = [
     'users',
     'videos',
     'django_rq',
+    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -171,4 +173,17 @@ RQ_QUEUES = {
         'DB': 0,
         'DEFAULT_TIMEOUT': 3600,
     }
+}
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+    'localhost',
+]
+
+def show_toolbar(request):
+    """Control visibility of the Django Debug Toolbar."""
+    return settings.DEBUG
+
+DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': show_toolbar,
 }
