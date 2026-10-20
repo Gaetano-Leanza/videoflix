@@ -13,9 +13,11 @@ from .utils import get_hls_file_response
 class VideoListView(APIView):
     """Retrieve list of all available videos with serialized metadata."""
 
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        """Fetch and return all video catalog entries."""
-        videos = Video.objects.all()
+        """Fetch and return all video catalog entries ordered by creation date DESC."""
+        videos = Video.objects.all().order_by('-created_at')
         serializer = VideoSerializer(
             videos, many=True, context={'request': request}
         )
